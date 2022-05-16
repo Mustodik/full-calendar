@@ -1,38 +1,53 @@
-import React, { useState, useRef, someMethod, data, events, } from "react";
+import React, { useState, useRef } from "react";
 import FullCalendar from "@fullcalendar/react";
 import dayGridPlugin from "@fullcalendar/daygrid";
 import AddEventModal from "./AddEventModal";
-import axios from "axios";
-import moment from "moment";
 
+let eventGuid = 0;
+let todayStr = new Date().toISOString().replace(/T.*$/, "");
 
+export const INITIAL_EVENTS = [
+  {
+    id: createEventId(),
+    title: "All-day event",
+    start: todayStr
+  },
+  {
+    id: createEventId(),
+    title: "Timed event",
+    start: todayStr + "T12:00:00"
+  }
+];
 
+export function createEventId() {
+  return String(eventGuid++);
+}
 
-export default function () {
+export default function Calendar() {
   const [modalOpen, setModalOpen] = useState(false);
-  const [events, setEvents] = useState([])
   const calendarRef = useRef(null);
 
   const onEventAdded = (event) => {
-    someMethod();
     let calendarApi = calendarRef.current.getApi();
-    calendarApi.addEvent( {
-      start: moment(event.start).toDate().getDate,
-      end: moment(event.end).toDate(),
-      title: event.title
 
+    calendarApi.addEvent({
+      id: createEventId(),
+      start: new Date(event.start).toISOString(),
+      end: new Date(event.end).toISOString(),
+      title: event.title
     });
   };
 
-  async function handleEventAdd(data) {
-   await axios.post("/api/calendar/create-event", data.events)
-  }
-
-  async function handleDateSet(date) {
-    const response = await axios.get("/api/calendar/get-events?start="+moment(data.start).toISOString()+"Send"+moment
-    (data.end).toISOString())
-   setEvents(response.data);
-  }
+  const deleteEvent = (clickInfo) => {
+    // eslint-disable-next-line no-restricted-globals
+    if (
+      window.confirm(
+        `Are you sure you want to delete the event '${clickInfo.event.title}'`
+      )
+    ) {
+      clickInfo.event.remove();
+    }
+  };
 
   return (
     <section>
@@ -47,11 +62,12 @@ export default function () {
       <div style={{ position: "relative", zIndex: 0 }}>
         <FullCalendar
           ref={calendarRef}
-          events={events}
+          editable={true}
+          selectable={true}
+          initialEvents={INITIAL_EVENTS}
           plugins={[dayGridPlugin]}
           initialView="dayGridMonth"
-          eventAdd={event => handleEventAdd(event)}
-          datesSet={(date) => handleDateSet(date)}
+          eventClick={deleteEvent}
         />
       </div>
     </section>
